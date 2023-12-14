@@ -22,6 +22,8 @@ Add blade templates to `views/blocks` which get and use ACF data. Each template 
   SupportsAlign:
   SupportsMode:
   SupportsMultiple:
+  SupportsColorText:
+  SupportsColorBackground:
   EnqueueStyle:
   EnqueueScript:
   EnqueueAssets:
@@ -43,6 +45,8 @@ Add blade templates to `views/blocks` which get and use ACF data. Each template 
   SupportsAlign: left right
   SupportsMode: false
   SupportsMultiple: false
+  SupportsColorText: false
+  SupportsColorBackground: true
   EnqueueStyle: styles/style.css
   EnqueueScript: scripts/script.js
   EnqueueAssets: path/to/asset
@@ -83,6 +87,8 @@ The options in the file header map to options in the [`acf_register_block_type` 
 | `SupportsInnerBlocks` | This property allows the block to support the nesting of other blocks within it. | `true`  or `false` |_optional_ (defaults to `false`) |
 | `SupportsAlignText` | This property adds an alignment toolbar button similar to that seen when editing a paragraph of text. | `true`  or `false` |_optional_ (defaults to `false`) |
 | `SupportsAlignContent` | This property adds an alignment toolbar button similar to that seen when editing a core "Cover block" | `true`  or `false` |_optional_ (defaults to `false`) |
+| `SupportsColorText` | This property adds a color picker for block text. The proposed colors are theme palette + default palette | `true`  or `false` |_optional_ (defaults to `false`) |
+| `SupportsColorBackground` | This property adds a color picker for block background. The proposed colors are theme palette + default palette | `true`  or `false` |_optional_ (defaults to `false`) |
 
 ## Creating ACF fields
 Once a block is created you'll be able to assign ACF fields to it using the standard Custom Fields interface in WordPress. We recommend using [sage-advanced-custom-fields](https://github.com/MWDelaney/sage-advanced-custom-fields) to keep your ACF fields in version control with Sage.
