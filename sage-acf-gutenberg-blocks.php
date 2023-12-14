@@ -43,6 +43,7 @@ add_action('acf/init', function () {
 
         foreach ($template_directory as $template) {
             if (!$template->isDot() && !$template->isDir()) {
+
                 // Strip the file extension to get the slug
                 $slug = removeBladeExtension($template->getFilename());
                 // If there is no slug (most likely because the filename does
@@ -52,7 +53,7 @@ add_action('acf/init', function () {
                 }
 
                 // Get header info from the found template file(s)
-                $file = "$dir/$slug.blade.php";
+                $file = "${dir}/${slug}.blade.php";
                 $file_path = file_exists($file) ? $file : '';
                 $file_headers = get_file_data($file_path, [
                     'title' => 'Title',
@@ -67,6 +68,8 @@ add_action('acf/init', function () {
                     'supports_anchor' => 'SupportsAnchor',
                     'supports_mode' => 'SupportsMode',
                     'supports_jsx' => 'SupportsInnerBlocks',
+                    'supports_color_text' => 'SupportsColorText',
+                    'supports_color_background' => 'SupportsColorBackground',
                     'supports_align_text' => 'SupportsAlignText',
                     'supports_align_content' => 'SupportsAlignContent',
                     'supports_multiple' => 'SupportsMultiple',
@@ -106,11 +109,6 @@ add_action('acf/init', function () {
                     'enqueue_style'   => $file_headers['enqueue_style'],
                     'enqueue_script'  => $file_headers['enqueue_script'],
                     'enqueue_assets'  => $file_headers['enqueue_assets'],
-                    'example'  => array(
-                        'attributes' => array(
-                            'mode' => 'preview',
-                        )
-                    )
                 ];
 
                 // If the PostTypes header is set in the template, restrict this block to those types
@@ -135,17 +133,27 @@ add_action('acf/init', function () {
 
                 // If the SupportsInnerBlocks header is set in the template, restrict this block mode feature
                 if (!empty($file_headers['supports_jsx'])) {
-                    $data['supports']['jsx'] = $file_headers['supports_jsx'] === 'true' ? true : false;
+                   $data['supports']['jsx'] = $file_headers['supports_jsx'] === 'true' ? true : false;
+                }
+
+                // If the SupportsColorText header is set in the template, restrict this block mode feature
+                if (!empty($file_headers['supports_color_text'])) {
+                    $data['supports']['color']['text'] = $file_headers['supports_color_text'] === 'true' ? true : false;
+                }
+
+                // If the SupportsColorBackground header is set in the template, restrict this block mode feature
+                if (!empty($file_headers['supports_color_background'])) {
+                    $data['supports']['color']['background'] = $file_headers['supports_color_background'] === 'true' ? true : false;
                 }
 
                 // If the SupportsAlignText header is set in the template, restrict this block mode feature
                 if (!empty($file_headers['supports_align_text'])) {
-                    $data['supports']['align_text'] = $file_headers['supports_align_text'] === 'true' ? true : false;
+                   $data['supports']['align_text'] = $file_headers['supports_align_text'] === 'true' ? true : false;
                 }
 
                 // If the SupportsAlignContent header is set in the template, restrict this block mode feature
                 if (!empty($file_headers['supports_align_text'])) {
-                    $data['supports']['align_content'] = $file_headers['supports_align_content'] === 'true' ? true : false;
+                   $data['supports']['align_content'] = $file_headers['supports_align_content'] === 'true' ? true : false;
                 }
 
                 // If the SupportsMultiple header is set in the template, restrict this block multiple feature
@@ -154,7 +162,7 @@ add_action('acf/init', function () {
                 }
 
                 // Register the block with ACF
-                \acf_register_block_type(apply_filters("sage/blocks/$slug/register-data", $data));
+                \acf_register_block_type( apply_filters( "sage/blocks/$slug/register-data", $data ) );
             }
         }
     }
@@ -196,12 +204,19 @@ function sage_blocks_callback($block, $content = '', $is_preview = false, $post_
         $view = ltrim($directory, 'views/') . '/' . $slug;
 
         if (isSage10()) {
+
             if (\Roots\view()->exists($view)) {
                 // Use Sage's view() function to echo the block and populate it with data
                 echo \Roots\view($view, ['block' => $block]);
             }
+
         } else {
-            echo \App\template(locate_template("$directory/$slug"), ['block' => $block]);
+            try {
+                // Use Sage 9's template() function to echo the block and populate it with data
+                echo \App\template($view, ['block' => $block]);
+            } catch (\Exception $e) {
+                //
+            }
         }
     }
 }
@@ -219,7 +234,7 @@ function removeBladeExtension($filename)
         return $matches[1];
     }
     // Return FALSE if the filename doesn't match the pattern.
-    return false;
+    return FALSE;
 }
 
 /**
