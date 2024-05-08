@@ -53,7 +53,7 @@ add_action('acf/init', function () {
                 }
 
                 // Get header info from the found template file(s)
-                $file = "${dir}/${slug}.blade.php";
+                $file = "{$dir}/{$slug}.blade.php";
                 $file_path = file_exists($file) ? $file : '';
                 $file_headers = get_file_data($file_path, [
                     'title' => 'Title',
