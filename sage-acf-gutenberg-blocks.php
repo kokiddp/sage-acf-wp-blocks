@@ -53,7 +53,7 @@ add_action('acf/init', function () {
                 }
 
                 // Get header info from the found template file(s)
-                $file = "{$dir}/{$slug}.blade.php";
+                $file = $dir . '/' . $slug . '.blade.php';
                 $file_path = file_exists($file) ? $file : '';
                 $file_headers = get_file_data($file_path, [
                     'title' => 'Title',
@@ -191,6 +191,20 @@ function sage_blocks_callback($block, $content = '', $is_preview = false, $post_
         'align'.$block['align']
     ];
 
+    $block_type = function_exists('acf_get_block_type') ? \acf_get_block_type($block['name']) : null;
+
+    if (support_color_feature($block_type, 'background')) {
+        if ($background_slug = resolve_block_color_slug($block, 'background')) {
+            $block['backgroundColor'] = $background_slug;
+        }
+    }
+
+    if (support_color_feature($block_type, 'text')) {
+        if ($text_slug = resolve_block_color_slug($block, 'text')) {
+            $block['textColor'] = $text_slug;
+        }
+    }
+
     // Filter the block data.
     $block = apply_filters("sage/blocks/$slug/data", $block);
 
@@ -259,4 +273,133 @@ function checkAssetPath(&$path)
 function isSage10()
 {
     return class_exists('Roots\Acorn\Application');
+}
+
+function support_color_feature($block_type, $feature)
+{
+    if (!is_array($block_type) || empty($block_type['supports']['color'])) {
+        return false;
+    }
+
+    if ($feature === 'background') {
+        return !empty($block_type['supports']['color']['background']);
+    }
+
+    if ($feature === 'text') {
+        return !empty($block_type['supports']['color']['text']);
+    }
+
+    return false;
+}
+
+function resolve_block_color_slug(array $block, $context)
+{
+    $slug_key = $context === 'background' ? 'backgroundColor' : 'textColor';
+    $style_key = $context === 'background' ? 'background' : 'text';
+
+    $candidates = [];
+
+    if (!empty($block[$slug_key]) && is_string($block[$slug_key])) {
+        $candidates[] = $block[$slug_key];
+    }
+
+    if (!empty($block['data'][$slug_key]) && is_string($block['data'][$slug_key])) {
+        $candidates[] = $block['data'][$slug_key];
+    }
+
+    if (!empty($block['attrs'][$slug_key]) && is_string($block['attrs'][$slug_key])) {
+        $candidates[] = $block['attrs'][$slug_key];
+    }
+
+    foreach ($candidates as $candidate) {
+        $candidate = sanitize_color_slug($candidate);
+        if (!empty($candidate)) {
+            return $candidate;
+        }
+    }
+
+    $class_sources = [];
+
+    if (!empty($block['className'])) {
+        $class_sources[] = $block['className'];
+    }
+
+    if (!empty($block['classes'])) {
+        $class_sources[] = is_array($block['classes']) ? implode(' ', array_filter($block['classes'])) : $block['classes'];
+    }
+
+    foreach ($class_sources as $class_string) {
+        $pattern = $context === 'background' ? '/has-([a-z0-9-]+)-background-color/' : '/has-([a-z0-9-]+)-color/';
+        if (preg_match($pattern, $class_string, $matches)) {
+            return sanitize_color_slug($matches[1]);
+        }
+    }
+
+    $style_candidates = [];
+
+    if (!empty($block['attrs']['style']['color'][$style_key])) {
+        $style_candidates[] = $block['attrs']['style']['color'][$style_key];
+    }
+
+    foreach ($style_candidates as $style_value) {
+        if (!is_string($style_value)) {
+            continue;
+        }
+
+        if (strpos($style_value, 'var(') !== false && preg_match('/--wp--preset--color--([a-z0-9-]+)/', $style_value, $matches)) {
+            return sanitize_color_slug($matches[1]);
+        }
+
+        if ($slug = match_palette_color($style_value)) {
+            return $slug;
+        }
+    }
+
+    return null;
+}
+
+function sanitize_color_slug($value)
+{
+    $value = trim($value);
+
+    if ($value === '') {
+        return null;
+    }
+
+    if (!preg_match('/^[a-z0-9-]+$/i', $value)) {
+        return null;
+    }
+
+    return \sanitize_key($value);
+}
+
+function match_palette_color($value)
+{
+    $value = strtolower(trim($value));
+
+    if ($value === '') {
+        return null;
+    }
+
+    $palette = \get_theme_support('editor-color-palette');
+
+    if (empty($palette)) {
+        return null;
+    }
+
+    if (isset($palette[0]) && is_array($palette[0])) {
+        $palette = $palette[0];
+    }
+
+    foreach ($palette as $color) {
+        if (empty($color['slug']) || empty($color['color'])) {
+            continue;
+        }
+
+        if (strtolower($color['color']) === $value) {
+            return \sanitize_key($color['slug']);
+        }
+    }
+
+    return null;
 }
