@@ -177,6 +177,11 @@ function sage_blocks_callback($block, $content = '', $is_preview = false, $post_
     $slug  = str_replace('acf/', '', $block['name']);
     $block = array_merge(['className' => ''], $block);
 
+    // Maybe hide according to metadata
+    if (isset($block['metadata']['blockVisibility']) && false === $block['metadata']['blockVisibility']) {
+        return;
+    }
+
     // Set up the block data
     $block['post_id'] = $post_id;
     $block['is_preview'] = $is_preview;
